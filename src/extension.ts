@@ -4,12 +4,7 @@ import * as vscode from "vscode";
 import { exec } from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
-import {
-  debounce,
-  Observable,
-  map,
-  distinctUntilChanged,
-} from "rxjs";
+import { debounce, Observable, map, distinctUntilChanged } from "rxjs";
 
 const LOGGING_DIR = "_ipmanten";
 
