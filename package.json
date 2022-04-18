@@ -3,7 +3,7 @@
   "displayName": "インターネットプログラミング",
   "description": "",
   "publisher": "dendai",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/azyobuzin/ipmanten.git"
@@ -15,7 +15,7 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:**.java"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {

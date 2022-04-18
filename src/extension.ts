@@ -13,6 +13,7 @@ const LOGGING_DIR = "_ipmanten";
 export function activate(context: vscode.ExtensionContext) {
   const outputChan =
     vscode.window.createOutputChannel("インターネットプログラミング");
+  outputChan.appendLine("[info] プラグイン起動")
 
   // ファイルが保存されたらバックアップを取る
   context.subscriptions.push(
