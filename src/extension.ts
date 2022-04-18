@@ -11,46 +11,41 @@ const LOGGING_DIR = "_ipmanten";
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log(
-    'Congratulations, your extension "dendai-ipmanten" is now active!'
-  );
+  const outputChan =
+    vscode.window.createOutputChannel("インターネットプログラミング");
 
   // ファイルが保存されたらバックアップを取る
   context.subscriptions.push(
     subscribe(
       vscodeEventToObservable(vscode.workspace.onDidSaveTextDocument).pipe(
         debounce(async () => {
-          const workspacePath = getWorkspacePath();
+          const workspacePath = getWorkspacePath(outputChan);
           if (workspacePath == null) {
             return;
           }
 
-          try {
-            // *.java を探して tar に固める
-            await new Promise<void>((resolve) => {
-              exec(
-                `mkdir -p ${LOGGING_DIR}; find . -name '*.java' -print0 | tar -cf "${LOGGING_DIR}/backup-$(date '+%Y%m%d-%H%M%S').tar" --null --files-from -`,
-                {
-                  cwd: workspacePath,
-                },
-                (error, _stdout, stderr) => {
-                  if (error) {
-                    console.error(`Failed to backup (${error}): ${stderr}`);
-                  } else {
-                    console.log("Succeeded to backup");
-                  }
-                  resolve();
+          // *.java を探して tar に固める
+          await new Promise<void>((resolve) => {
+            exec(
+              `mkdir -p ${LOGGING_DIR}; find . -name '*.java' -print0 | tar -cf "${LOGGING_DIR}/backup-$(date '+%Y%m%d-%H%M%S').tar" --null --files-from -`,
+              {
+                cwd: workspacePath,
+              },
+              (error, _stdout, stderr) => {
+                if (error) {
+                  outputChan.appendLine(
+                    `[error] Failed to backup (${error}): ${stderr}`
+                  );
+                } else {
+                  outputChan.appendLine("[info] Succeeded to backup");
                 }
-              );
-            });
-          } catch (e) {
-            console.error(e);
-          } finally {
-            // 1秒間は次の保存をさせない
-            await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-          }
+                resolve();
+              }
+            );
+          });
+
+          // 1秒間は次の保存をさせない
+          await new Promise<void>((resolve) => setTimeout(resolve, 1000));
         })
       )
     )
@@ -71,7 +66,7 @@ export function activate(context: vscode.ExtensionContext) {
         // 大量にイベントが発生するので、本当に変更があったときだけ保存
         distinctUntilChanged(),
         debounce(async (payload) => {
-          const workspacePath = getWorkspacePath();
+          const workspacePath = getWorkspacePath(outputChan);
           if (workspacePath == null) {
             return;
           }
@@ -98,8 +93,9 @@ export function activate(context: vscode.ExtensionContext) {
               ),
               payload
             );
+            outputChan.appendLine("[info] Wrote diagnostics");
           } catch (e) {
-            console.error(e);
+            outputChan.appendLine(`[error] Failed to write diagnostics: ${e}`);
           } finally {
             // 5秒間は次の保存をさせない
             await new Promise<void>((resolve) => setTimeout(resolve, 5000));
@@ -129,19 +125,21 @@ function subscribe(observable: Observable<unknown>): vscode.Disposable {
   };
 }
 
-function getWorkspacePath(): string | null {
+function getWorkspacePath(outputChan: vscode.OutputChannel): string | null {
   const workspaces = vscode.workspace.workspaceFolders;
   if (!workspaces || workspaces.length === 0) {
     return null;
   }
   if (workspaces.length > 1) {
-    console.warn("ワークスペースが複数開いています。");
+    outputChan.appendLine("[warn] ワークスペースが複数開いています。");
   }
 
   const workspaceUri = workspaces[0].uri;
 
   if (workspaceUri.scheme !== "file") {
-    console.warn("不明なスキーマなので無視");
+    outputChan.appendLine(
+      `[warn] 不明なスキーマなので無視: ${workspaceUri.toString()}`
+    );
     return null;
   }
 
