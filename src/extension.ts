@@ -27,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
           // *.java を探して tar に固める
           await new Promise<void>((resolve) => {
             exec(
-              `mkdir -p ${LOGGING_DIR}; find . -name '*.java' -print0 | tar -cf "${LOGGING_DIR}/backup-$(date '+%Y%m%d-%H%M%S').tar" --null --files-from -`,
+              `mkdir -p ${LOGGING_DIR}; find . -name '*.java' -print0 | xargs -0 tar -cf "${LOGGING_DIR}/backup-$(date '+%Y%m%d-%H%M%S').tar"`,
               {
                 cwd: workspacePath,
               },
