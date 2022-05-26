@@ -5,6 +5,7 @@ import { exec } from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import { debounce, Observable, map, distinctUntilChanged } from "rxjs";
+import ExceptionTerminalLinkProvider from "./ExceptionTerminalLinkProvider";
 
 const LOGGING_DIR = "_ipmanten";
 
@@ -13,7 +14,13 @@ const LOGGING_DIR = "_ipmanten";
 export function activate(context: vscode.ExtensionContext) {
   const outputChan =
     vscode.window.createOutputChannel("インターネットプログラミング");
-  outputChan.appendLine("[info] プラグイン起動")
+  outputChan.appendLine("[info] プラグイン起動");
+
+  context.subscriptions.push(
+    vscode.window.registerTerminalLinkProvider(
+      new ExceptionTerminalLinkProvider()
+    )
+  );
 
   // ファイルが保存されたらバックアップを取る
   context.subscriptions.push(
