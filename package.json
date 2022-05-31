@@ -3,7 +3,7 @@
   "displayName": "インターネットプログラミング",
   "description": "",
   "publisher": "dendai",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/azyobuzin/ipmanten.git"
@@ -19,7 +19,20 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": []
+    "commands": [
+      {
+        "command": "extension-practice.csv-preview",
+        "title": "CSV Preview"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "extension-practice.csv-preview",
+          "when": "resourceExtname == .csv"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

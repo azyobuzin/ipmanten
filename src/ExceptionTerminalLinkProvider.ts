@@ -18,7 +18,19 @@ export default class ExceptionTerminalLinkProvider
       {
         exception: "java.lang.NullPointerException",
         message:
-          "値がnullである変数を操作してしまったようです。以下に表示されている行番号付近を調べて、値がnullになるケースがないか良く調べてみましょう。",
+          "値がnullである変数を操作してしまったようです。以下に表示されている行番号付近で、値がnullになるケースがないかよく調べてみましょう。【参考】教科書270ページ",
+      },
+
+      {
+        exception: "java.lang.ArrayIndexOutOfBoundsException",
+        message:
+          "範囲外の配列インデックスを操作してしまったようです。以下に表示されている行番号付近で、要素数nの配列のインデックスが0からn-1までであることを踏まえて、範囲外のインデックスを操作していないかよく調べてみましょう。【参考】教科書173ページ",
+      },
+
+      {
+        exception: "java.lang.ArithmeticException",
+        message:
+          "ゼロでの除算をしてしまったようです。以下に表示されている行番号付近を調べて、値を0で割る（分母が0である）ケースがないかよく調べてみましょう。【参考】教科書425ページ",
       },
     ] as const;
 

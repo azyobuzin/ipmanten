@@ -112,6 +112,89 @@ export function activate(context: vscode.ExtensionContext) {
       )
     )
   );
+
+  let disposable = vscode.commands.registerCommand(
+    "extension-practice.csv-preview",
+    async () => {
+      // ドキュメントのCSV形式をHTMLのテーブルに変換する
+      // const activeDocument = vscode.window.activeTextEditor?.document;
+      // if (!activeDocument) return;
+      // const table = convertCsvToHtmlTable(CSV);
+
+      const workspacePath = getWorkspacePath(outputChan);
+      if (workspacePath == null) {
+        return;
+      }
+
+      const scoreFilePath = path.join(workspacePath, "ip_score.csv");
+      let CSV: string;
+      try {
+        CSV = await fs.readFile(path.join(workspacePath, "ip_score.csv"), {
+          encoding: "utf8",
+        });
+      } catch (err) {
+        console.log(err);
+        // ip_score.csvにアクセスできないので何もしない
+        return;
+      }
+
+      // webviewを生成する
+      const panel = vscode.window.createWebviewPanel(
+        "csvPreview",
+        "CSV Preview",
+        vscode.ViewColumn.Two
+      );
+
+      // cssのパスを生成する。
+      // 拡張機能からローカルリソースのアクセスは直接できないため、一手間かかる。
+      // 下記参照のこと。
+      // https://code.visualstudio.com/api/extension-guides/webview#loading-local-content
+      const onDiskPath = vscode.Uri.file(
+        path.join(context.extensionPath, "media", "csv-preview.css")
+      );
+      const cssUri = panel.webview.asWebviewUri(onDiskPath);
+
+      // 画像のパスを生成する。
+      const onDiskPathG = vscode.Uri.file(
+        path.join(context.extensionPath, "media", "medal_medal.png")
+      );
+      const picG = panel.webview.asWebviewUri(onDiskPathG);
+
+      const onDiskPathS = vscode.Uri.file(
+        path.join(context.extensionPath, "media", "medal_silver.png")
+      );
+      const picS = panel.webview.asWebviewUri(onDiskPathS);
+
+      const onDiskPathB = vscode.Uri.file(
+        path.join(context.extensionPath, "media", "medal_bronze.png")
+      );
+      const picB = panel.webview.asWebviewUri(onDiskPathB);
+
+      const medalImages: Record<string, string> = {
+        G: "medal_medal.png",
+        S: "medal_silver.png",
+        B: "medal_bronze.png",
+      };
+      const medalUris: Record<string, vscode.Uri> = {};
+      for (let color in medalImages) {
+        medalUris[color] = panel.webview.asWebviewUri(
+          vscode.Uri.file(
+            path.join(context.extensionPath, "media", medalImages[color])
+          )
+        );
+      }
+
+      panel.webview.html = getWebviewContent(
+        cssUri,
+        convertCsvToHtmlTable(CSV, medalUris)
+      );
+    }
+  );
+
+  context.subscriptions.push(disposable);
+
+  // 起動時に csv-preview を実行する
+  vscode.commands.executeCommand("extension-practice.csv-preview");
 }
 
 // this method is called when your extension is deactivated
@@ -152,4 +235,49 @@ function getWorkspacePath(outputChan: vscode.OutputChannel): string | null {
   }
 
   return workspaceUri.fsPath;
+}
+
+function convertCsvToHtmlTable(
+  document: string,
+  medalUris: Record<string, vscode.Uri>
+): string {
+  // ドキュメントのテキストを1行ずつ読み取り、コンマ区切りで配列に変換する
+  const content: string[][] = document
+    .split("\n")
+    .map((line) => line.split(",").map((cell) => cell.trim()));
+
+  // HTML形式に変換する
+  const [header, ...body] = content;
+  for (let row of body) {
+    row[2] = `<img src="${medalUris[row[2]]}" width="50">`;
+    row[4] = `<img src="${medalUris[row[4]]}" width="50">`;
+  }
+  // テキストの1行目はヘッダーにする
+  const thead = `<thead><tr>${header.reduce(
+    (pre, cur) => `${pre}<th class="header">${cur}</th>`,
+    ""
+  )}</tr></thead>`;
+  // 2行目以降はボディー（表の本体）にする
+  const tbody = `<tbody>${body.reduce(
+    (pre, cur) =>
+      `${pre}<tr>${cur.reduce((pre, cur) => `${pre}<td>${cur}</td>`, "")}</tr>`,
+    ""
+  )}</tbody>`;
+
+  return `<table border="1">${thead}${tbody}</table>`;
+}
+
+function getWebviewContent(cssUri: vscode.Uri, contents: string): string {
+  return `<!DOCTYPE html>
+          <html lang="ja">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <link rel="stylesheet" type="text/css" href="${cssUri}">
+              <title>CSV Preview</title>
+          </head>
+          <body>
+              ${contents}
+          </body>
+          </html>`;
 }
